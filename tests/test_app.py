@@ -13,6 +13,18 @@ def test_root_return(client):
     assert response.json() == {'message': 'Hello World'}
 
 
+def test_get_token(client, user):
+    response = client.post(
+        '/token',
+        data={'username': user.email, 'password': user.clean_password},
+    )
+    token = response.json()
+
+    assert response.status_code == HTTPStatus.OK
+    assert 'access_token' in token
+    assert 'token_type' in token
+
+
 def test_create_user(client):
     """
     Este teste deve validar o status_code 'CREATED' e
@@ -68,37 +80,40 @@ def test_get_user(client, user):
     assert response.json() == user_schema
 
 
-def test_update_user(client, user):
+def test_update_user(client, user, token):
     """
     Este teste deve validar o status_code 'OK' e
     a atualização de dados do usuário.
     """
     response = client.put(
-        '/users/1',
+        f'/users/{user.id}',
+        headers={'Authorization': f'Bearer {token}'},
         json={
-            'username': 'testupdatename',
-            'email': 'testupdatemail@test.com',
-            'password': 'test_pass',
-            'id': 1,
+            'username': 'testuser',
+            'email': 'emailtest@update.com',
+            'password': 'mynewpassword',
         },
     )
-
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        'username': 'testupdatename',
-        'email': 'testupdatemail@test.com',
-        'id': 1,
+        'username': 'testuser',
+        'email': 'emailtest@update.com',
+        'id': user.id,
     }
 
 
-def test_delete_user(client, user):
+def test_delete_user(client, user, token):
     """
     Este teste deve validar o status_code 'OK' e
     a deleção de dados do usuário.
     """
-    response = client.delete('/users/1')
+    response = client.delete(
+        f'/users/{user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {'message': 'User Deleted'}
+    assert response.json() == {'message': 'User deleted'}
 
 
 # Raise Test #################################################################
@@ -123,9 +138,9 @@ def test_create_user_exits(client, user):
     response = client.post(
         '/users/',
         json={
-            'username': 'Test',
-            'email': 'test@test.com',
-            'password': 'passtest',
+            'username': 'Teste',
+            'email': 'teste@test.com',
+            'password': 'testtest',
         },
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
@@ -141,8 +156,8 @@ def test_create_user_email_exits(client, user):
     response = client.post(
         '/users/',
         json={
-            'username': 'Test2',
-            'email': 'test@test.com',
+            'username': 'Teste2',
+            'email': 'teste@test.com',
             'password': 'passtest',
         },
     )
@@ -150,15 +165,16 @@ def test_create_user_email_exits(client, user):
     assert response.json() == {'detail': 'Email already exists'}
 
 
-def test_user_put_not_found(client, user):
+def test_user_put_not_found(client, user, token):
     """
     Este teste deve validar o status_code 'NOT FOUND' e
     a mensagem 'User not Found' ao tentar atualizar um usuário inexistente.
     """
     response = client.put(
         '/users/8',
+        headers={'Authorization': f'Bearer {token}'},
         json={
-            'username': 'testusernotfound',
+            'username': 'Teste',
             'email': 'test@test.com',
             'password': 'test_pass',
         },
@@ -168,11 +184,14 @@ def test_user_put_not_found(client, user):
     assert response.json() == {'detail': 'User Not Found'}
 
 
-def test_user_delete_not_found(client, user):
+def test_user_delete_not_found(client, user, token):
     """
     Este teste deve validar o status_code 'NOT FOUND' e
     a mensagem 'User not Found' ao tentar deletar um usuário inexistente.
     """
-    response = client.delete('/users/8')
+    response = client.delete(
+        '/users/8',
+        headers={'Authorization': f'Bearer {token}'},
+    )
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {'detail': 'User Not Found'}
