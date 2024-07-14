@@ -1,3 +1,4 @@
+import factory
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -7,7 +8,16 @@ from sqlalchemy.pool import StaticPool
 from fast_zero.app import app
 from fast_zero.database import get_session
 from fast_zero.models import User, table_registry
-from fast_zero.security import create_access_token, get_password_hash
+from fast_zero.security import get_password_hash
+
+
+class UserFactory(factory.Factory):
+    class Meta:
+        model = User
+
+    username = factory.Sequence(lambda n: f'test{n}')
+    email = factory.LazyAttribute(lambda obj: f'{obj.username}@test.com')
+    password = factory.LazyAttribute(lambda obj: f'{obj.username}+senha')
 
 
 @pytest.fixture()
@@ -41,16 +51,26 @@ def session():
 
 @pytest.fixture()
 def user(session):
-    user = User(
-        username='Teste',
-        email='teste@test.com',
-        password=get_password_hash('testtest'),
-    )
+    pwd = 'testtest'
+
+    user = UserFactory(password=get_password_hash(pwd))
+
     session.add(user)
     session.commit()
     session.refresh(user)
 
-    user.clean_password = 'testtest'
+    user.clean_password = pwd  # Monkey Path
+
+    return user
+
+
+@pytest.fixture()
+def outher_user(session):
+    user = UserFactory()
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
 
     return user
 
@@ -62,19 +82,3 @@ def token(client, user):
         data={'username': user.email, 'password': user.clean_password},
     )
     return response.json()['access_token']
-
-
-@pytest.fixture()
-def token_sub_not_found(user):
-    token_sem_sub = create_access_token(data_payload={'sub': ''})
-
-    return token_sem_sub
-
-
-@pytest.fixture()
-def token_invalid_email(user):
-    token_email_invalido = create_access_token(
-        data_payload={'sub': 'email@invalido.com'}
-    )
-
-    return token_email_invalido

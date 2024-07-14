@@ -34,15 +34,17 @@ def test_read_users(client):
     assert response.json() == {'users': []}
 
 
-def test_read_users_with_users(client, user):
+def test_read_users_with_users(client, user, outher_user):
     """
     Este teste deve validar o status_code 'OK' e
     o retorno de uma lista de usuários contendo
     os dados do usuário criado.
     """
     user_schema = UserPublic.model_validate(user).model_dump()
+    outrher_user_schema = UserPublic.model_validate(outher_user).model_dump()
     response = client.get('/users/')
-    assert response.json() == {'users': [user_schema]}
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {'users': [user_schema, outrher_user_schema]}
 
 
 def test_get_user(client, user):
@@ -52,6 +54,7 @@ def test_get_user(client, user):
     """
     user_schema = UserPublic.model_validate(user).model_dump()
     response = client.get('/users/1')
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == user_schema
 
 
@@ -112,9 +115,9 @@ def test_create_user_exits(client, user):
     response = client.post(
         '/users',
         json={
-            'username': 'Teste',
-            'email': 'teste@test.com',
-            'password': 'testtest',
+            'username': user.username,
+            'email': user.email,
+            'password': user.password,
         },
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
@@ -130,23 +133,23 @@ def test_create_user_email_exits(client, user):
     response = client.post(
         '/users/',
         json={
-            'username': 'Teste2',
-            'email': 'teste@test.com',
-            'password': 'passtest',
+            'username': 'test2',
+            'email': user.email,
+            'password': user.password,
         },
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json() == {'detail': 'Email already exists'}
 
 
-def test_user_put_not_found(client, user, token):
+def test_update_with_wrong_user(client, outher_user, token):
     """
     Este teste deve validar o status_code 'FORBIDDEN' e
     a mensagem 'Not enough permissions'
     ao tentar atualizar um usuário inexistente.
     """
     response = client.put(
-        f'/users/{user.id + 1}',
+        f'/users/{outher_user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'Teste',
@@ -158,33 +161,15 @@ def test_user_put_not_found(client, user, token):
     assert response.json() == {'detail': 'Not enough permissions'}
 
 
-def test_user_delete_not_found(client, user, token):
+def test_delete_with_wrong_user(client, outher_user, token):
     """
     Este teste deve validar o status_code 'FORBIDDEN' e
     a mensagem 'Not enough permissions'
     ao tentar deletar um usuário inexistente.
     """
     response = client.delete(
-        f'/users/{user.id + 1}',
+        f'/users/{outher_user.id}',
         headers={'Authorization': f'Bearer {token}'},
     )
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {'detail': 'Not enough permissions'}
-
-
-def test_current_user_invalido(client, user, token_sub_not_found):
-    response = client.delete(
-        f'/users/{user.id}',
-        headers={'Authorization': f'Bearer {token_sub_not_found}'},
-    )
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    assert response.json() == {'detail': 'Could not validate credentials'}
-
-
-def test_current_user_none(client, user, token_invalid_email):
-    response = client.delete(
-        f'/users/{user.id}',
-        headers={'Authorization': f'Bearer {token_invalid_email}'},
-    )
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    assert response.json() == {'detail': 'Could not validate credentials'}

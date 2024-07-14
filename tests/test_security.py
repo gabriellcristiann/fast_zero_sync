@@ -1,9 +1,8 @@
 from http import HTTPStatus
-from fastapi import HTTPExceptions
-from jwt import decode
-import pytest
 
-from fast_zero.security import create_access_token, settings, get_current_user
+from jwt import decode
+
+from fast_zero.security import create_access_token, settings
 
 
 def test_jwt():
@@ -25,6 +24,25 @@ def test_jwt_invalid_token(client):
     assert response.json() == {'detail': 'Could not validate credentials'}
 
 
-def test_get_current_user_error():
-    with pytest.raises(HTTPExceptions):
-        get_current_user({''})
+def test_wrong_sub_current_user(client, user):
+    token_sub_not_found = create_access_token(data_payload={'sub': ''})
+
+    response = client.delete(
+        f'/users/{user.id}',
+        headers={'Authorization': f'Bearer {token_sub_not_found}'},
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    assert response.json() == {'detail': 'Could not validate credentials'}
+
+
+def test_wrong_current_user(client, user):
+    token_wrong_email = create_access_token(
+        data_payload={'sub': 'wrong@wrong.com'}
+    )
+
+    response = client.delete(
+        f'/users/{user.id}',
+        headers={'Authorization': f'Bearer {token_wrong_email}'},
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    assert response.json() == {'detail': 'Could not validate credentials'}
