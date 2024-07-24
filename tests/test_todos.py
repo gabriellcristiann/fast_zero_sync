@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import factory.fuzzy
 
 from fast_zero.models import Todo, TodoState
@@ -135,3 +137,49 @@ def test_list_todos_filter_combined_should_return_5_todos(
         headers={'Authorization': f'Bearer {token}'},
     )
     assert len(response.json()['todos']) == expected_todos
+
+
+def test_patch_todo_error(client, token):
+    response = client.patch(
+        '/todo/10', json={}, headers={'Authorization': f'Bearer {token}'}
+    )
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {'detail': 'Not Found'}
+
+
+def test_patch_todo(session, client, user, token):
+    todo = TodoFactory(user_id=user.id)
+
+    session.add(todo)
+    session.commit()
+
+    response = client.patch(
+        f'/todos/{todo.id}',
+        json={'title': 'teste!'},
+        headers={'Authorization': f'Bearer {token}'},
+    )
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()['title'] == 'teste!'
+
+
+def test_delete_todo(session, client, user, token):
+    todo = TodoFactory(user_id=user.id)
+
+    session.add(todo)
+    session.commit()
+
+    response = client.delete(
+        f'/todos/{todo.id}', headers={'Authorization': f'Bearer {token}'}
+    )
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {
+        'message': 'Task has been deleted successfully.'
+    }
+
+
+def test_delete_todo_error(client, token):
+    response = client.delete(
+        f'/todos/{10}', headers={'Authorization': f'Bearer {token}'}
+    )
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {'detail': 'Not Found'}
