@@ -42,6 +42,12 @@ class Todo:
     title: Mapped[str]
     description: Mapped[str]
     state: Mapped[TodoState]
+    created_at: Mapped[datetime] = mapped_column(
+        init=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        init=False, onupdate=func.now()
+    )
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
 
