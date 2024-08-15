@@ -18,8 +18,8 @@ services:
     build:
       context: ../
       dockerfile: docker/Dockerfile
-    environment:
-      DATABASE_URL: postgresql+psycopg://megaconecta:M3g4_devDB@fast_zero_database:5432/app_db
+    env_file:
+      ./.env
     ports:
       - "8000:8000"
 
