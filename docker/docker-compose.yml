@@ -1,0 +1,28 @@
+---
+version: "3.4"
+services:
+  fast_zero_database:
+    image: postgres
+    volumes: 
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: megaconecta
+      POSTGRES_DB: app_db
+      POSTGRES_PASSWORD: M3g4_devDB
+    ports:
+      - "5432:5432"
+
+  fastzero_app:
+    image: fast_zero_app
+    entrypoint: ./entrypoint.sh
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://megaconecta:M3g4_devDB@fast_zero_database:5432/app_db
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
+...

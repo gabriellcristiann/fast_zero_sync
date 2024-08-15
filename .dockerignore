@@ -1,0 +1,14 @@
+.gitignore
+README.md
+**__pycache__/
+**.pytest_cache/
+**.ruff_cache/
+docker/
+.coverage
+htmlcov/
+.dockerignore
+tests/
+database.db
+.vscode/
+.git/
+.python-version
