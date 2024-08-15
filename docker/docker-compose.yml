@@ -6,9 +6,9 @@ services:
     volumes: 
       - pgdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: megaconecta
+      POSTGRES_USER: user_here
       POSTGRES_DB: app_db
-      POSTGRES_PASSWORD: M3g4_devDB
+      POSTGRES_PASSWORD: Pass_here
     ports:
       - "5432:5432"
 
@@ -18,8 +18,8 @@ services:
     build:
       context: ../
       dockerfile: docker/Dockerfile
-    env_file:
-      ./.env
+    # env_file:
+    #   ./.env
     ports:
       - "8000:8000"
 
